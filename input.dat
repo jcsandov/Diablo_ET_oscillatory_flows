@@ -1,0 +1,178 @@
+! A data file for diablo.  This is a generic, easy method of data
+! input, as long as you don't change the number of comment lines.
+! Note that the grid size is defined in the file grid_def.
+!   FLAVOR        VERSION    
+    'Basic'         2.0        
+!   USE_MPI       USE_LES   READ_HDF5     SAVE_HDF5
+    .TRUE.       .FALSE.      .TRUE.        .TRUE.         
+! Parameters:     RE,         LX,       LY,       LZ,      TIME_LIMIT
+                1000.0      8.191897   10.000   8.191897    10000000
+! OASBL:      RE_SUCTION,       WINFTY
+                 400.0           0.1 
+! Method:     NUM_PER_DIR, CREATE_NEW_FLOW, RHO_TYPE,  TIME_AVERAGE
+                  2            .FALSE.         2          .TRUE.
+! Time March:  N_TIME_STEPS, DELTA_T,   RESET_TIME, VARIABLE_DT,  CFL, UPDATE_DT
+                 400000       0.0001     .FALSE.      .FALSE.      0.5      1
+! I/O:         VERBOSITY, SAVE_FLOW_INT, SAVE_STATS_INT,  MOVIE,    INIT_E            , T0
+                   2           100         1             .FALSE.  1.138425E-03   0.81228999999893337
+! Here include 6*N_TH lines, see below for format
+!         CREATE_FLOW_TH(1)  Create new field or Read from DIABLO_TH.START
+               .FALSE.
+!         FILTER_TH(1)         FILTER_INT(1)     (If and how often to filter)
+             .FALSE.                10
+!         RI_TAU(1)      PR(1)       REACTION(1)
+             0.0          1.0           0.0
+!----------------------------------------------------------------------------------------
+! OSCILLATORY FLOW TYPE: 1 = WALL_STOKES_MODE 
+! ---------------------  2 = PRESSURE_STOKES_MODE
+!                        3 = OASBL    
+!
+!                  OSCILLATORY_FLOW_TYPE
+                           3
+!
+!   APPLY_SYMMETRIES              
+        .FALSE.                      
+!----------------------------------------------------------------------------------------
+!                        EDGE TRACKING MODE VARIABLES 
+!               (See explanation at the bottom of the file)
+!----------------------------------------------------------------------------------------
+!   EDGE_TRACKING 
+     .TRUE.               
+!   EDGE_TRACKING_MODE: 1 = RESCALING
+!                       2 = BISECTION
+!     
+!  EDGE_TRACKING_MODE
+          1
+!  KIN_E_LAM_THRS   KIN_E_TURB_THRS
+       1E-05              1.5E-03
+!  MIN_T_ES_EVAL       AVG_WINDOW_ES_EVAL
+      0.5                   0.5
+!  TOL_ET_ITERATION   T_ET_COMPARISON
+     1.0E-15                2.0
+!----------------------------------------------------------------------------------------
+!  RESCALING MODE VARIABLES:
+!  ------------------------- 
+!   RESUME_RESCALING_SIM          
+     .FALSE.                 
+!  ALPHA_E_LAM_INI     ALPHA_E_TURB_INI
+     1.0E-04               1.0E00
+!----------------------------------------------------------------------------------------
+!  BISECTION MODE VARIABLES:
+!  -------------------------
+! RESUME_BISECTION_SIM     SAVE_ALL_BSCTN_FFS     SET_LAMBDA_INIT
+       .FALSE.               .FALSE.                  .TRUE.       
+! LAMBDA_INIT_LAM    LAMBDA_INIT_TURB
+       0.0                1.0
+!  DELTA_LAMBDA_THRS  COMP_WINDOW_SPS_EVAL  DELTA_TRAJECTORIES_THRS  ENERGY_BISECT_THRS
+     0.0001              0.5                    0.00001                 0.00001
+!----------------------------------------------------------------------------------------
+! When including scalar advection, include 6 lines like the following for each scalar
+!
+!         CREATE_FLOW_TH(1)  Create new field or Read from DIABLO_TH.START
+               .TRUE.
+!         FILTER_TH(1)         FILTER_INT(1)     (If and how often to filter)
+               .TRUE.                10
+!         RI_TAU(1)      PR(1)       REACTION(1)
+             0.0             1.0          .FALSE.
+!----------------------------------------------------------------------------------------
+!||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!----------------------------------------------------------------------------------------
+!                                                                                       |
+! EDGE TRACKING VARIABLES                                                               |
+! =======================                                                               |
+! Written by      : Jorge Sandoval (jsandoval001.dundee.ac.uk)                          |
+! Role            : PDRA, University of Dundee                                          |
+! Project         : Saving energy via drag reduction: a                                 |
+!                   mathematical description of oscillatory flows                       |
+! PI              : Tom Eaves (teaves001@dunde.ac.uk)                                   |
+!                                                                                       |
+! EDGE_TRACKING_MODE:                                                                   |
+! -------------------                                                                   |  
+!      - RESCALING: it uses a starting file (start.h5) and rescales the velocity field  |
+!                   by iterating a parameter ALPHA, which rescales the energy and then, |
+!                   the velocity field: E_RESCALED = ALPHA * E_INI                      |
+!                                                                                       |
+!      - BISECTION: it uses TWO starting files (start_lam.h5 and start_turb.h5) and     |
+!                   iteratively generates solution between them two by using a          |
+!                   parameter LAMBDA, such that:                                        |
+!                   u_BISECTION = u_LAM + LAMDA * ( u_TURB - u_LAM )                    |
+!                                                                                       |  
+!  Energy                                                                               |
+!   .                                                                                   | 
+!  /|\                            TIME MOVING WINDOW FOR AVERAGING THE ENERGY           |
+!   |                                      |                        |                   |
+!   |                                 ---> |<- AVG_WINDOW_ES_EVAL ->| --->              |
+!   |                                      |                        |                   |  
+!   | KIN_E_TURB_THRS             .    /\      /\      /\      /\   .                   |
+!   | - - - - - - - - - - - - - - .- -/- \- - /- \- - /- \- - /- \- . /\-               | 
+!   |                             .  /    \  /    \  /    \  /    \ ./  \               | 
+!   | - - - - - - - - - - - - /\/\/\/- - - \/- - - \/- - - \/- - - \/- - \              |  
+!   | KIN_E_LAM_THRS         |    .                                 .                   | 
+!   |________________________|____|_________________________________|__\ t              |
+!                            |    |                                 |  /                |
+!                        T0FILE   |                                 |                   | 
+!                                 |                                 |                   | 
+!                     T0FILE + MIN_T_ES_EVAL                       TIME-->              |
+!                                                                                       | 
+!                                                                                       | 
+! KIN_E_LAM_THRS & KIN_E_TURB_THRS : Laminar and turbulent kinetic energy thresholds.   |
+!                                    when the average energy over the time window       |
+!                                    defined by AVG_WINDOW_ES_EVAL is out of this       | 
+!                                    range, a bisection of ALPHA (RESCALING MODE )      |
+!                                    or LAMBDA (BISECTION MODE) is performed.           |  
+!                                                                                       |  
+! MIN_T_ES_EVAL: time after which the code start evaluating the conditions to decide a  | 
+!                a bisection in ALPHA or LAMBDA.                                        |  
+!                                                                                       |  
+!                                                                                       |  
+! T_ET_COMPARISON: Time along which the energy of two consecutives trajectories are     |
+!                  compared to stop the bisection loop. If two consecutive trajectories |
+!                  have energies smaller than TOL_ET_ITERATION over a period longer     |
+!                  than T_ET_COMPARISON, then the simulation is stopped.                |
+!                                                                                       |  
+!----------------------------------------------------------------------------------------
+! RESCALING MODE VARIABLES                                                              | 
+! -------------------------                                                             |
+! RESUME_RESCALING_SIM    :   if .TRUE., it reads the file rescaling.ind to set the     |
+!                             ALPHA values at the beginning of a resumed simulation     |
+!                                                                                       |  
+! ALPHA_E_LAM_INI,ALPHA_E_TURB_INI : ALPHA = 0.5 * (ALPHA_E_LAM_INI + ALPHA_E_TURB_INI) | 
+!                                                                                       |  
+!----------------------------------------------------------------------------------------
+! BISECTION MODE VARIABLES                                                              |  
+! ------------------------                                                              |  
+! RESUME_BISECTION_SIM:     if .TRUE., it reads the files sp_shifts.ind and             |
+!                           lambda_shifts.ind to set the LAMBDA values values and       |
+!                           bisection indexes at the beginning of a resumed simulation  |
+!                                                                                       |  
+! SAVE_ALL_BSCTN_FFS:       if .TRUE., every time a starting point shift is performed,  |   
+!                           it saves all the .h5 files contained in the folders         |
+!                           latest_laminar_solutions and latest_turbulent_solutions     | 
+!                           into tar files                                              |
+!                                                                                       | 
+! SET_LAMBDA_INIT:          if .TRUE., it reads LAMBDA_INIT_LAM and LAMBDA_INIT_TURB    |
+!                           from input.dat. Otherwise, it just initialises              |
+!                           LATEST_LAMBDA_LAM = 0 and LATEST_LAMBDA_TURB = 1            |
+!                                                                                       | 
+! DELTA_LAMBDA_THRS:        threshold for |LATEST_LAMBDA_LAM - LATEST_LAMBDA_TURB|,     |
+!                           below which it performs a starting point reinitialisation   | 
+!                                                                                       |
+!                                                                                       | 
+! COMP_WINDOW_SPS_EVAL:     is the size of the smallest time window laminar and         |
+!                           turbulent trajectories are compared before deciding to      |
+!                           perform a starting point reinitialisation.                  |            
+!                                                                                       |
+! DELTA_TRAJECTORIES_THRS:  is the threshold for the maximum difference between the     |
+!                           laminar and kinetic energy time series. If the difference   |
+!                           is less than the threshold, it performs a starting point    |
+!                           reinitialisation                                            | 
+!                                                                                       | 
+! ENERGY_BISECT_THRS:       when it looks for a new starting point, it looks backward   |
+!                           in time and stops at the time when the turbulent and        |
+!                           laminar kinetic energy time series are are closer than      |
+!                           ENERGY_BISECT_THRS. Then it sets that time as the new       |
+!                           starting point                                              |  
+!                                                                                       |  
+!----------------------------------------------------------------------------------------
+
+
