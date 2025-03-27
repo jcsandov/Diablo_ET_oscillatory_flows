@@ -196,6 +196,12 @@ C    CURRENT_VERSION number to make obsolete previous input files!)
             CLOSE(20)
 
           END IF
+        ELSE
+          
+          ! If I'm starting a rescaling simulation from the scratch, 
+          ! I set the amount of times the alpha value has been rescaled
+          ! to 0
+          SHIFTS_COUNT = 0
 
         END IF
 
@@ -253,9 +259,6 @@ C    CURRENT_VERSION number to make obsolete previous input files!)
 
         NU = 1.0d0/RE
         
-        ! # of times the energy has been shifted
-        SHIFTS_COUNT = 0
-
         ! LATEST_ALPHA_E_LAM and LATEST_ALPHA_E_TURB may come from
         ! input.dat or rescaling.ind depending on RESUME_RESCALING_SIM
         ALPHA_E = 0.5D0 * ( LATEST_ALPHA_E_LAM + LATEST_ALPHA_E_TURB )
@@ -3231,6 +3234,7 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         open( unit=500 , file=SAVPATH(:LSP)//'rescaling.ind', 
      &        form='formatted')
 
+          write(500,*) SHIFTS_COUNT
           write(500,*) LATEST_ALPHA_E_LAM
           write(500,*) LATEST_ALPHA_E_TURB
 
@@ -3254,6 +3258,8 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         open( unit=500 , file=SAVPATH(:LSP)//'rescaling.ind', 
      &        status='old',form='formatted')
 
+
+          read(500,*) SHIFTS_COUNT
           read(500,*) LATEST_ALPHA_E_LAM
           read(500,*) LATEST_ALPHA_E_TURB
 
