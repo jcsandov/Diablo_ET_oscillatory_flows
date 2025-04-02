@@ -51,7 +51,7 @@ C    CURRENT_VERSION number to make obsolete previous input files!)
      &, CFL , UPDATE_DT
         READ(11,*) 
         READ(11,*) VERBOSITY, SAVE_FLOW_INT, SAVE_STATS_INT 
-     & , MOVIE, INIT_E , T0
+     & , MOVIE, INIT_E , T0 , DISPLAY_TIME_OUTPUT_FILE
         READ(11,*) 
 
         ! Read in the parameters for the N_TH scalars
@@ -583,7 +583,9 @@ C Initialize flow.
           ! I write to energy_shift_history.dat, the alpha value and 
           ! the new energy after the last energy shift (write header
           ! set to .TRUE.)
-          IF ( ET_RESCALING ) CALL WRITE_ENERGY_SHIFT_HISTORY(.TRUE.)
+          IF ( ET_RESCALING .AND. .NOT. RESUME_RESCALING_SIM ) THEN
+            CALL WRITE_ENERGY_SHIFT_HISTORY(.TRUE.)
+          END IF
 
           ! I write to lambda_shift_history.dat the starting point
           ! information (count and physical time) and the lambda shift
@@ -1351,16 +1353,16 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
               ! Name of the initial condition of the latest energy
               ! rescaling iteration
-              WRITE( LATEST_INITIAL_SOL_STR, '(i3.3, a)') 
-     &               SHIFTS_COUNT-1, '_0000_out.h5'
+              !WRITE( LATEST_INITIAL_SOL_STR, '(i3.3, a)') 
+     &        !       SHIFTS_COUNT-1, '_0000_out.h5'
 
               ! Name to store the latest initial condition
-              WRITE( INIT_SOL_FNAME, '(a, i3.3, a)') 
-     &              '0000_out_', SHIFTS_COUNT-1, '_lam.h5'
+              !WRITE( INIT_SOL_FNAME, '(a, i3.3, a)') 
+     &        !      '0000_out_', SHIFTS_COUNT-1, '_lam.h5'
 
-              call execute_command_line('cp "'// 
-     &                      trim( LATEST_INITIAL_SOL_STR )// 
-     &             '" "' // trim(INIT_SOL_FNAME)// '"')
+              !call execute_command_line('cp "'// 
+     &        !              trim( LATEST_INITIAL_SOL_STR )// 
+     &        !     '" "' // trim(INIT_SOL_FNAME)// '"')
 
               ! Remove al the previous files from the destination folder
               call execute_command_line( 
@@ -1377,16 +1379,16 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
               ! Name of the initial condition of the latest energy
               ! rescaling iteration
-              WRITE( LATEST_INITIAL_SOL_STR, '(i3.3, a)') 
-     &               SHIFTS_COUNT-1, '_0000_out.h5'
+              !WRITE( LATEST_INITIAL_SOL_STR, '(i3.3, a)') 
+     &        !       SHIFTS_COUNT-1, '_0000_out.h5'
 
               ! Name to store the latest initial condition
-              WRITE(INIT_SOL_FNAME, '(a, i3.3, a)') 
-     &        '0000_out_', SHIFTS_COUNT-1, '_turb.h5'
+              !WRITE(INIT_SOL_FNAME, '(a, i3.3, a)') 
+     &        !'0000_out_', SHIFTS_COUNT-1, '_turb.h5'
   
-              call execute_command_line('cp "'// 
-     &                      trim( LATEST_INITIAL_SOL_STR )// 
-     &             '" "' // trim(INIT_SOL_FNAME)// '"')
+              !call execute_command_line('cp "'// 
+     &        !              trim( LATEST_INITIAL_SOL_STR )// 
+     &        !     '" "' // trim(INIT_SOL_FNAME)// '"')
 
              ! Remove al the previous files from the destination folder
              call execute_command_line( 
@@ -2201,8 +2203,8 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       CHARACTER*512 ENERGY_SHIFTS_COUNT_STR
       CHARACTER*512 SP_SHIFTS_COUNT_STR
       CHARACTER*512 LAMBDA_SHIFTS_COUNT_STR
-
       CHARACTER*512 counter_str
+      CHARACTER*512 TIME_STRING
 
       ! Shift indexes as strings
       WRITE ( ENERGY_SHIFTS_COUNT_STR , '(I3.3)' ) SHIFTS_COUNT
@@ -2293,8 +2295,24 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
           end if         
 
-          FNAME = SAVPATH(:LSP) // TRIM(str) // '_' // 'out.h5'
-         
+          IF ( DISPLAY_TIME_OUTPUT_FILE ) THEN
+
+            CALL FORMAT_TIME_STRING( TIME , TIME_STRING )
+            ! Non-ET mode    : t_1.2345678_0123_out.h5
+            ! Rescaling mode : t_1.2345678_001_0123_out.h5
+            ! Bisection mode : t_1.2345678_002_001_0123_out.h5
+            FNAME = SAVPATH(:LSP) // 't_' // TRIM(TIME_STRING) // '_'// 
+     &      TRIM(str) //'_' // 'out.h5'
+
+          ELSE
+            ! Non-ET mode    : 0123_out.h5
+            ! Rescaling mode : 001_0123_out.h5
+            ! Bisection mode : 002_001_0123_out.h5
+
+            FNAME = SAVPATH(:LSP) // TRIM(str) // '_' // 'out.h5'
+          
+          END IF
+
         end if
          
         call WriteHDF5(FNAME)
@@ -3266,6 +3284,33 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         close(unit=500) 
 
       END 
+
+C----*|--.---------.---------.---------.---------.---------.---------.-|-------|      
+      SUBROUTINE FORMAT_TIME_STRING(NUM, STR)
+C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+        
+        ! This routine receives the current time and returns a formatted 
+        ! string which can be used to format output-file names 
+
+        IMPLICIT NONE
+        REAL*8 NUM
+        CHARACTER*(*) STR
+      
+        IF (NUM .LT. 10.0D0) THEN
+            ! 1 digit before decimal + 7 decimals (e.g., 0.5000000)
+            WRITE(STR, '(F9.7)') NUM
+        ELSE IF (NUM .LT. 100.0D0) THEN
+            ! 2 digits before decimal + 6 decimals (e.g., 12.300000)
+            WRITE(STR, '(F9.6)') NUM
+        ELSE
+            ! 3 digits before decimal + 5 decimals (e.g., 100.19530)
+            WRITE(STR, '(F9.5)') NUM
+        END IF
+      
+        ! Remove leading space added by Fortran
+        IF ( STR(1:1) .EQ. ' ') STR = STR(2:)
+      
+      END
 
 C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       subroutine wall_time(wt)

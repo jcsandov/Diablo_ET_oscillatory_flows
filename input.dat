@@ -13,8 +13,8 @@
                   2            .FALSE.         2          .TRUE.
 ! Time March:  N_TIME_STEPS, DELTA_T,   RESET_TIME, VARIABLE_DT,  CFL, UPDATE_DT
                  400000       0.0001     .FALSE.      .FALSE.      0.5      1
-! I/O:         VERBOSITY, SAVE_FLOW_INT, SAVE_STATS_INT,  MOVIE,    INIT_E            , T0
-                   2           100         1             .FALSE.  1.138425E-03   0.81228999999893337
+! I/O:  VERBOSITY, SAVE_FLOW_INT, SAVE_STATS_INT,  MOVIE,    INIT_E    T0    DISPLAY_TIME_OUTPUT_FILE
+            2           100         1             .FALSE.  1.138E-03  0.8122        .TRUE.
 ! Here include 6*N_TH lines, see below for format
 !         CREATE_FLOW_TH(1)  Create new field or Read from DIABLO_TH.START
                .FALSE.
