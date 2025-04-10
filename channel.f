@@ -62,6 +62,7 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
       IF ( WALL_STOKES ) THEN
 
+        BU2  = 0.0d0
         BU3  = 0.0d0
         DBU3 = 0.0d0
         
@@ -85,6 +86,7 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
       IF ( PRESSURE_STOKES ) THEN
 
+        BU2  = 0.0d0
         BU3  = 0.0d0
         DBU3 = 0.0d0
 
@@ -1290,6 +1292,7 @@ C We have CUi, need to compute CP.  Solve tridiagonal system exactly
 
       IF ( WALL_STOKES ) THEN
 
+        BU2  = 0.0d0
         BU3  = 0.0d0
         DBU3 = 0.0d0
 
@@ -1310,6 +1313,7 @@ C We have CUi, need to compute CP.  Solve tridiagonal system exactly
 
       IF ( PRESSURE_STOKES ) THEN
 
+        BU2  = 0.0d0
         BU3  = 0.0d0
         DBU3 = 0.0d0
         
