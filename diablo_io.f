@@ -1671,7 +1671,7 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       !I = MIN_ECOUNT_COMMON
 
       !DO WHILE ( I > 3 .AND. ABS(  KINS_TURB(I) 
-     !&                           - KINS_LAM (I) ) > ENERGY_BISECT_THRS )
+      !&                           - KINS_LAM (I) ) > ENERGY_BISECT_THRS)
       !  I = I-1
       !
       !END DO
