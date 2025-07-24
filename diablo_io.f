@@ -1668,11 +1668,19 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       ! I need to find the index. I move backwards to perform less
       ! iterations
 
-      I = MIN_ECOUNT_COMMON
+      !I = MIN_ECOUNT_COMMON
 
-      DO WHILE ( I > 3 .AND. ABS(  KINS_TURB(I) 
-     &                           - KINS_LAM (I) ) > ENERGY_BISECT_THRS )
-        I = I-1
+      !DO WHILE ( I > 3 .AND. ABS(  KINS_TURB(I) 
+     !&                           - KINS_LAM (I) ) > ENERGY_BISECT_THRS )
+      !  I = I-1
+      !
+      !END DO
+
+      I = 3
+      
+      DO WHILE ( I < MIN_ECOUNT_COMMON .AND. ABS(  KINS_TURB(I) 
+     &                           - KINS_LAM (I) ) < ENERGY_BISECT_THRS )
+        I = I+1
 
       END DO
 
